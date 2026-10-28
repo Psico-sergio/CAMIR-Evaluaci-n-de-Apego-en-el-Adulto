@@ -83,8 +83,8 @@
    ============================================================ */
 const CONFIG = {
   // URL del Web App de Google Apps Script (ver guía de despliegue).
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyUl45F3vor3zkJIcmLHulXTQ9P5vgg5ZuC0PcD9Esdrk3zXH-gzmE91H7q50G_3QHB8g/exec",
-  INCLUIR_PROTOTIPOS: true // Producto 2: prototipos activos (ítem 50 excluido del cálculo, ver guía).
+  APPS_SCRIPT_URL: "PEGAR_AQUI_LA_URL_DEL_WEB_APP",
+  INCLUIR_PROTOTIPOS: true // Prototipos activos (ítem 50 excluido del cálculo de prototipos).
 };
 
 /* ============================================================
@@ -206,12 +206,12 @@ function calcularEscalas(respuestas){
     };
   }
   return resultado;
+}
 
 /* ============================================================
    MOTOR DE PROTOTIPOS
    Excluye el ítem 50 del vector de correlación (70 de 71 ítems):
-   su valor de patrón no está disponible en el Anexo II consultado.
-   Ver guía de despliegue para el detalle metodológico.
+   su valor de patrón no figura en el Anexo II disponible.
    ============================================================ */
 const PATRONES = {
  1:[4,1,1],2:[2,3,4],3:[2,4,3],4:[4,2,1],5:[1,3,3],6:[5,1,1],7:[3,4,5],8:[5,4,2],
@@ -227,9 +227,9 @@ const PATRONES = {
 };
 const IDX = {seguro:0, rechazante:1, preocupado:2};
 const TRANSFORM = {
-  seguro:      {resta:.59, divide:.26},
-  rechazante:  {resta:.13, divide:.15},
-  preocupado:  {resta:.14, divide:.16}
+  seguro:      {resta:0.59, divide:0.26},
+  rechazante:  {resta:0.13, divide:0.15},
+  preocupado:  {resta:0.14, divide:0.16}
 };
 
 function pearson(x, y){
@@ -252,11 +252,11 @@ function calcularPrototipos(respuestas){
   for(const estilo of ["seguro","rechazante","preocupado"]){
     const vectorPatron = ids.map(id => PATRONES[id][IDX[estilo]]);
     const r = pearson(vectorSujeto, vectorPatron);
-    const {resta, divide} = TRANSFORM[estilo];
+    const tr = TRANSFORM[estilo];
     if(r === null){
       resultado[estilo] = { r: null, t: null, t_redondeado: null };
     } else {
-      const t = ((r - resta)/divide)*10 + 50;
+      const t = ((r - tr.resta)/tr.divide)*10 + 50;
       resultado[estilo] = { r: Number(r.toFixed(3)), t: Number(t.toFixed(1)), t_redondeado: Math.round(t) };
     }
   }
@@ -275,12 +275,12 @@ function clasificar(prototipos){
     rechazante: prototipos.rechazante.t_redondeado,
     preocupado: prototipos.preocupado.t_redondeado
   };
-  const sobre60 = Object.entries(vals).filter(([k,v]) => v > 60);
+  const sobre60 = Object.entries(vals).filter(function(par){ return par[1] > 60; });
   let reglaMaximo;
   if(sobre60.length >= 2){
-    reglaMaximo = "Inclasificable (" + sobre60.map(x=>x[0]).join(" y ") + " ambos sobre 60)";
+    reglaMaximo = "Inclasificable (" + sobre60.map(function(x){ return x[0]; }).join(" y ") + " sobre 60)";
   } else {
-    const max = Object.entries(vals).sort((a,b)=>b[1]-a[1])[0];
+    const max = Object.entries(vals).sort(function(a,b){ return b[1]-a[1]; })[0];
     reglaMaximo = max[0].charAt(0).toUpperCase()+max[0].slice(1) + " (T=" + max[1] + ")";
   }
   let reglaPrioridadSeguro;
@@ -290,7 +290,7 @@ function clasificar(prototipos){
   } else {
     reglaPrioridadSeguro = "[Fallback no literal del manual] " + reglaMaximo;
   }
-  return { reglaMaximo, reglaPrioridadSeguro };
+  return { reglaMaximo: reglaMaximo, reglaPrioridadSeguro: reglaPrioridadSeguro };
 }
 
 /* ============================================================
@@ -378,7 +378,7 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
   btn.disabled = true;
   document.getElementById("statusMsg").textContent = "Enviando…";
 
-   const escalas = calcularEscalas(respuestas);
+  const escalas = calcularEscalas(respuestas);
   const payload = {
     id: obtenerIdPaciente(),
     fecha: new Date().toISOString(),
@@ -418,4 +418,3 @@ function mostrarPantallaFinal(){
 </script>
 </body>
 </html>
- 
